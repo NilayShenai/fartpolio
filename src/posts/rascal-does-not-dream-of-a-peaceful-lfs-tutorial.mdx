@@ -1,0 +1,252 @@
+import { Alert } from '../components/MdxComponents';
+
+export const metadata = {
+  title: 'rascal does not dream of a peaceful lfs tutorial',
+  date: '2027-07-04',
+  description: 'a super comprehensive, step-by-step guide to compiling linux from scratch from scratch, that even a ?<jaat>a retard from noida? can understand.'
+};
+
+building a linux system from scratch is a rite of passage. it is a path littered with compiler warnings, broken linkers, missing glibc headers, and the inevitable kernel panic on boot. this is a humanized record of ?(LFS)Linux From Scratch? (version 12.x), walking through the architecture, the pitfalls, and the exact mechanics of bootstrapping your own operating system from raw source code.
+
+---
+
+# the philosophy: why do this?
+
+modern distributions (arch, gentoo, debian) shield you from the fundamental coordination between the kernel, the C library, the compiler, and userspace. LFS forces you to compile a temporary toolchain first, chroot into it, rebuild the system using itself, and hook up a bootloader. 
+
+you are the linker. if you make a mistake on step 4, the kernel will panic on step 88. keep your head cool.
+
+---
+
+# phase 1: preparing the playground
+
+before compiling anything, we need a partition to hold our system and a host environment with compiler tools (gcc, binutils, bison, make).
+
+## partitioning the disk
+
+create a partition of at least 30GB. we will format it with `ext4` for simplicity.
+
+```bash
+# partition the target disk (replace sdX with your target drive)
+cfdisk /dev/sdX
+
+# format the partition
+mkfs.vfat -F32 /dev/sdX1  # boot (EFI)
+mkfs.ext4 /dev/sdX2      # root (LFS)
+```
+
+## mounting and environment variables
+
+we define the `$LFS` variable so we don't accidentally write to the host system.
+
+```bash
+export LFS=/mnt/lfs
+mkdir -pv $LFS
+mount -v -t ext4 /dev/sdX2 $LFS
+```
+
+<Alert>
+  **important warning**: always verify that `$LFS` is populated before running cleaning commands. running `rm -rf $LFS/*` when the variable is empty will wipe your host machine's root directory.
+</Alert>
+
+create the directory layout for our temporary toolchain and source code:
+
+```bash
+mkdir -pv $LFS/sources
+mkdir -pv $LFS/tools
+chmod -v a+wt $LFS/sources
+```
+
+---
+
+# phase 2: the temporary toolchain (the cross-compile stage)
+
+this is where LFS gets tricky. we must build a compiler that runs on our host machine but compiles code for our new LFS target system, completely clean of host dependencies.
+
+## binutils - pass 1
+
+binutils provides the linker (`ld`) and assembler (`as`). we compile it first.
+
+```bash
+tar -xf binutils-2.42.tar.xz
+cd binutils-2.42
+mkdir -v build && cd build
+
+../configure --prefix=$LFS/tools \
+             --with-sysroot=$LFS \
+             --target=$(uname -m)-lfs-linux-gnu \
+             --disable-nls \
+             --enable-gprofng=no \
+             --disable-werror \
+             --enable-default-hash-style=gnu
+
+make && make install
+```
+
+## gcc - pass 1
+
+now we build a bare-bones version of GCC. it needs MPC, MPFR, and GMP mathematical libraries.
+
+```bash
+tar -xf gcc-13.2.0.tar.xz
+cd gcc-13.2.0
+
+# extract dependency libraries inside gcc source
+tar -xf ../gmp-6.3.0.tar.xz && mv -v gmp-6.3.0 gmp
+tar -xf ../mpfr-4.2.1.tar.xz && mv -v mpfr-4.2.1 mpfr
+tar -xf ../mpc-1.3.1.tar.gz && mv -v mpc-1.3.1 mpc
+
+mkdir -v build && cd build
+
+../configure \
+    --target=$(uname -m)-lfs-linux-gnu \
+    --prefix=$LFS/tools \
+    --with-glibc-version=2.39 \
+    --with-sysroot=$LFS \
+    --enable-languages=c,c++ \
+    --disable-nls \
+    --disable-shared \
+    --disable-multilib \
+    --disable-threads \
+    --disable-libatomic \
+    --disable-libgomp \
+    --disable-libquadmath \
+    --disable-libssp \
+    --disable-libvtv \
+    --disable-libstdcxx \
+    --enable-languages=c,c++
+
+make && make install
+```
+
+## glibc headers & startup files
+
+we need the standard C library. first, we install kernel headers so Glibc knows what system calls the Linux kernel supports.
+
+```bash
+# inside linux kernel source folder
+make mrproper
+make headers
+find usr/include -name '.*' -delete
+mkdir -pv $LFS/usr/include
+cp -rv usr/include/* $LFS/usr/include
+```
+
+now, build Glibc itself:
+
+```bash
+cd glibc-2.39
+mkdir -v build && cd build
+
+../configure \
+      --prefix=/usr \
+      --host=$(uname -m)-lfs-linux-gnu \
+      --build=$(uname -m)-pc-linux-gnu \
+      --enable-kernel=4.19 \
+      --with-headers=$LFS/usr/include \
+      libc_cv_slibdir=/usr/lib
+
+make && make DESTDIR=$LFS install
+```
+
+<Alert>
+  **sanity check**: at this stage, test that the compiler is linking against our new `$LFS/tools` directory and NOT the host libraries. compilation of a simple `main.c` should show the interpreter path targeting `/tools/lib/ld-linux-...` when inspected with `readelf -l a.out`.
+</Alert>
+
+---
+
+# phase 3: entering the chroot chamber
+
+once the temporary tools are built, we pivot from the host environment. we mount the virtual filesystems `/dev`, `/proc`, and `/sys` from our host into `$LFS`, and change our root directory (?(chroot)change root?).
+
+```bash
+# mount host virtual filesystems
+mount -v --bind /dev $LFS/dev
+mount -v --bind /dev/pts $LFS/dev/pts
+mount -vt proc proc $LFS/proc
+mount -vt sysfs sysfs $LFS/sys
+mount -vt tmpfs tmpfs $LFS/run
+
+# enter the chamber
+chroot "$LFS" /usr/bin/env -i \
+    HOME=/root \
+    TERM="$TERM" \
+    PS1='(lfs chroot) \u:\w\$ ' \
+    PATH=/usr/bin:/usr/sbin \
+    /bin/bash --login
+```
+
+from this moment forward, you are no longer on your host machine. you are inside a clean, empty LFS system.
+
+---
+
+# phase 4: building the system proper
+
+inside chroot, we rebuild all libraries (Glibc, GCC, Binutils, Bash, Coreutils, Systemd) compiling them with our newly created local toolchain.
+
+the order is crucial:
+1. **Glibc**: rebuild locally with final settings.
+2. **Binutils**: compile pass 2.
+3. **GCC**: compile pass 2, enabling standard dynamic libraries and shared links.
+4. **Coreutils**: provides basic system commands (`ls`, `cat`, `chmod`).
+5. **Systemd / SysVinit**: boot management layers.
+
+this stage takes hours of compilation. configure your compiler to use multiple threads (`export MAKEFLAGS="-j$(nproc)"`) to speed up the compile loop.
+
+---
+
+# phase 5: booting the baby
+
+we need a kernel to coordinate userspace, and a bootloader to launch it.
+
+## compiling the linux kernel
+
+configure the kernel modules based on your hardware. do not use a generic distribution configuration; include only what you need.
+
+```bash
+cd /sources/linux-6.7.4
+make menuconfig
+```
+
+ensure the following options are built directly into the kernel image (not compiled as modules `[M]`), otherwise LFS won't be able to read its own root filesystems:
+* support for ext4 (`CONFIG_EXT4_FS=y`).
+* disk driver controllers (SATA/NVMe).
+* virtual dev filesystems (`CONFIG_DEVTMPFS=y`).
+
+```bash
+make
+make modules_install
+cp -iv arch/x86/boot/bzImage /boot/vmlinuz-6.7.4-lfs
+```
+
+## configuring fstab
+
+tell the kernel where to mount filesystems. edit `/etc/fstab`:
+
+```plaintext
+# /etc/fstab: static file system information
+# <file system>             <mount point>   <type>      <options>               <dump>  <pass>
+UUID=your-root-uuid-here    /               ext4        defaults                1       1
+UUID=your-boot-uuid-here    /boot           vfat        defaults                0       2
+```
+
+## grub boot configuration
+
+install the GRUB bootloader to point to the disk sector:
+
+```bash
+grub-install /dev/sdX
+grub-mkconfig -o /boot/grub/grub.cfg
+```
+
+---
+
+# the post-mortem: kernel panic
+
+when you reboot and select LFS in GRUB, you will likely get a kernel panic. it is part of the process.
+
+common panic causes:
+- **`VFS: Unable to mount root fs on unknown-block`**: you forgot to build ext4 support or your storage controller driver (SATA/AHCI/NVMe) directly into the kernel. re-run `make menuconfig` and search for the drivers.
+- **`init not found`**: the kernel booted, but it couldn't find the `/sbin/init` system manager. this usually means your symlinks are broken or dynamic linkers are looking for dependencies in host directories that don't exist. chroot back from the host and run compiler linker checks.
+
+once you resolve these, you will boot into a command line interface. a pure monospace interface, built entirely from source code.
