@@ -1,0 +1,143 @@
+/* Giscus Custom Dark Wisteria Theme */
+main {
+  /* Syntax Highlighting */
+  --color-prettylights-syntax-comment: #7E7B8C;
+  --color-prettylights-syntax-constant: #B3A8D4;
+  --color-prettylights-syntax-entity: #D0CBE3;
+  --color-prettylights-syntax-storage-modifier-import: #E2DFE9;
+  --color-prettylights-syntax-entity-tag: #B3A8D4;
+  --color-prettylights-syntax-keyword: #B3A8D4;
+  --color-prettylights-syntax-markup-bold: #E2DFE9;
+  --color-prettylights-syntax-markup-italic: #E2DFE9;
+  --color-prettylights-syntax-markup-heading: #B3A8D4;
+  --color-prettylights-syntax-string: #D0CBE3;
+
+  /* General Colors */
+  --color-canvas-default: #0A090D;      /* Background */
+  --color-canvas-subtle: #111016;       /* Comment boxes */
+  --color-border-default: #22202A;      /* Outer borders */
+  --color-border-muted: #1D1B24;        /* Inner dividers */
+  --color-border-subtle: #22202A;
+  --color-fg-default: #E2DFE9;          /* Main text */
+  --color-fg-muted: #7E7B8C;            /* Muted metadata */
+  --color-fg-subtle: #666373;
+
+  /* Accent Highlight System */
+  --color-accent-fg: #B3A8D4;           /* Wisteria links / reactions */
+  --color-accent-emphasis: #B3A8D4;     /* Active tags */
+  --color-accent-muted: rgba(179, 168, 212, 0.4);
+  --color-accent-subtle: rgba(179, 168, 212, 0.1);
+  --color-danger-fg: #E06C75;
+  --color-neutral-muted: rgba(34, 32, 42, 0.4);
+  --color-neutral-subtle: rgba(34, 32, 42, 0.1);
+
+  /* Buttons - Standard States */
+  --color-btn-text: #E2DFE9;
+  --color-btn-bg: #111016;
+  --color-btn-border: #22202A;
+  --color-btn-hover-bg: #15131A;
+  --color-btn-hover-border: #B3A8D4;
+  --color-btn-active-bg: #1D1B24;
+  --color-btn-active-border: #B3A8D4;
+
+  /* Buttons - Primary Action States (Sign In / Comment) */
+  --color-btn-primary-text: #0A090D;
+  --color-btn-primary-bg: #B3A8D4;
+  --color-btn-primary-border: #B3A8D4;
+  --color-btn-primary-hover-bg: #D0CBE3;
+  --color-btn-primary-hover-border: #D0CBE3;
+  --color-btn-primary-active-bg: #B3A8D4;
+  --color-btn-primary-active-border: #B3A8D4;
+  --color-btn-primary-disabled-text: #7E7B8C;
+  --color-btn-primary-disabled-bg: #111016;
+  --color-btn-primary-disabled-border: #22202A;
+}
+
+/* --- Layout overrides inside Giscus iframe --- */
+
+/* Force monospaced styling throughout */
+* {
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace !important;
+}
+
+/* Comment Box Custom Styling */
+.giscus-comment {
+  background-color: #111016 !important;
+  border: 1px solid #22202A !important;
+  border-radius: 2px !important;
+  box-shadow: none !important;
+}
+
+.giscus-comment-header {
+  background-color: #15131A !important;
+  border-bottom: 1px solid #22202A !important;
+  border-top-left-radius: 2px !important;
+  border-top-right-radius: 2px !important;
+}
+
+/* Hide Giscus Logo / Promo Footer */
+.giscus-footer {
+  display: none !important;
+}
+
+/* Hide Reactions block to keep comments ultra-clean */
+.giscus-reactions {
+  display: none !important;
+}
+
+/* Format Write/Preview tab navigation to look like our navbar */
+.tabnav-tabs {
+  border-bottom: 1px solid #22202A !important;
+}
+
+.tabnav-tab {
+  border: none !important;
+  background: none !important;
+  color: #7E7B8C !important;
+  padding: 4px 8px !important;
+  margin-right: 8px !important;
+  font-size: 13px !important;
+  text-transform: lowercase !important;
+  font-weight: 500 !important;
+}
+
+.tabnav-tab[aria-selected="true"] {
+  color: #B3A8D4 !important;
+  border-bottom: 1px solid #B3A8D4 !important;
+  box-shadow: none !important;
+}
+
+/* Input Area styling */
+.write-content, .preview-content {
+  background-color: #0A090D !important;
+  border: 1px solid #22202A !important;
+  border-radius: 2px !important;
+}
+
+textarea {
+  background-color: transparent !important;
+  color: #E2DFE9 !important;
+  font-size: 14px !important;
+}
+
+textarea::placeholder {
+  color: #666373 !important;
+}
+
+/* Sign-in banner customization */
+.giscus-input-container {
+  border: 1px solid #22202A !important;
+  border-radius: 2px !important;
+  background-color: #111016 !important;
+  padding: 16px !important;
+}
+
+/* Remove default margins / adjust spacing */
+.giscus {
+  margin-top: 16px !important;
+}
+
+/* Hide comments metadata/count bar to keep comments section completely minimal */
+.giscus-meta {
+  display: none !important;
+}

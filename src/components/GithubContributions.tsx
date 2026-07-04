@@ -11,8 +11,8 @@ interface ContributionData {
   contributions: ContributionDay[][];
 }
 
-const CACHE_KEY = 'github_contributions_cache';
-const CACHE_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_KEY = 'github_contributions_cache_v2';
+const CACHE_DURATION_MS = 1 * 60 * 60 * 1000; // 1 hour
 
 export function GithubContributions({ username }: { username: string }) {
   const [data, setData] = useState<ContributionData | null>(null);

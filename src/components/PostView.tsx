@@ -51,6 +51,41 @@ export function PostView({ post, onBack }: PostViewProps) {
     return () => clearTimeout(timer);
   }, [post.slug]);
 
+  useEffect(() => {
+    // Dynamic Giscus script injector
+    const script = document.createElement('script');
+    script.src = 'https://giscus.app/client.js';
+    script.setAttribute('data-repo', 'NilayShenai/fartpolio');
+    script.setAttribute('data-repo-id', 'R_kgDOTM9A7Q');
+    
+    // Default fallback category settings (General). 
+    // If you prefer a different category, update these values from https://giscus.app
+    script.setAttribute('data-category', 'General');
+    script.setAttribute('data-category-id', 'DIC_kwDOTM9A7c4DAd1L');
+    
+    script.setAttribute('data-mapping', 'pathname');
+    script.setAttribute('data-strict', '0');
+    script.setAttribute('data-reactions-enabled', '0');
+    script.setAttribute('data-emit-metadata', '0');
+    // Set the theme to the direct production www custom stylesheet URL with a cache-buster (?v=3)
+    // to bypass the 301 non-www redirect and force the Giscus servers to load the new styles.
+    script.setAttribute('data-theme', 'https://www.nilayshenai.foo/giscus-theme.css?v=3');
+    script.setAttribute('data-lang', 'en');
+    script.setAttribute('crossorigin', 'anonymous');
+    script.async = true;
+
+    const container = document.getElementById('giscus-comments-container');
+    if (container) {
+      container.appendChild(script);
+    }
+
+    return () => {
+      if (container) {
+        container.innerHTML = '';
+      }
+    };
+  }, [post.slug]);
+
   return (
     <div className="post-container">
       <button className="post-back" onClick={onBack}>
@@ -62,8 +97,15 @@ export function PostView({ post, onBack }: PostViewProps) {
       </div>
       
       <div className="post-layout-wrapper">
-        <div className="markdown-body">
-          <PostComponent />
+        <div style={{ flexGrow: 1, minWidth: 0 }}>
+          <div className="markdown-body">
+            <PostComponent />
+          </div>
+          
+          {/* Giscus Comments Section */}
+          <div className="post-comments" style={{ marginTop: '48px' }}>
+            <div id="giscus-comments-container"></div>
+          </div>
         </div>
 
         {headings.length > 0 && (
