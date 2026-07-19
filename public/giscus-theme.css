@@ -136,8 +136,3 @@ textarea::placeholder {
 .giscus {
   margin-top: 16px !important;
 }
-
-/* Hide comments metadata/count bar to keep comments section completely minimal */
-.giscus-meta {
-  display: none !important;
-}

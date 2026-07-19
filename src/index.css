@@ -914,3 +914,28 @@ footer {
     padding: 12px !important;
   }
 }
+
+/* KaTeX Math Alignment & Typography */
+.katex-display {
+  margin: 24px 0 !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 0;
+  text-align: center;
+}
+
+.katex {
+  font-size: 1.05em;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.katex-display > .katex {
+  display: inline-block;
+  white-space: nowrap;
+  text-align: initial;
+}
+
+.markdown-body .katex {
+  font-family: KaTeX_Main, 'Times New Roman', serif;
+}

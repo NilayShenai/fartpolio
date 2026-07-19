@@ -63,7 +63,8 @@ export function PostView({ post, onBack }: PostViewProps) {
     script.setAttribute('data-category', 'General');
     script.setAttribute('data-category-id', 'DIC_kwDOTM9A7c4DAd1L');
     
-    script.setAttribute('data-mapping', 'pathname');
+    script.setAttribute('data-mapping', 'specific');
+    script.setAttribute('data-term', post.slug);
     script.setAttribute('data-strict', '0');
     script.setAttribute('data-reactions-enabled', '0');
     script.setAttribute('data-emit-metadata', '0');
